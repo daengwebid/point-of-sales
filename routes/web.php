@@ -10,6 +10,11 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
+Route::get('/coba', function() {
+    $date = '2018-5';
+    return date('Y-m', strtotime($date));
+    
+});
 Route::get('/', function() {
     return redirect(route('login'));
 });
@@ -39,7 +44,9 @@ Route::group(['middleware' => 'auth'], function() {
     });
 
     Route::group(['middleware' => ['role:kasir']], function() {
-        
+        Route::get('/transaksi', 'OrderController@addOrder')->name('order.transaksi');
+        Route::get('/checkout', 'OrderController@checkout')->name('order.checkout');
+        Route::post('/checkout', 'OrderController@buy')->name('order.storeCheckout');
     });
 
     Route::get('/home', 'HomeController@index')->name('home');

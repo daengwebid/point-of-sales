@@ -23,12 +23,11 @@
                         <i class="nav-icon fa fa-dashboard"></i>
                         <p>
                             Dashboard
-                            <i class="right fa fa-angle-left"></i>
                         </p>
                     </a>
                 </li>
 
-                @can('show products|delete products|create products')
+                @if (auth()->user()->can('show products') || auth()->user()->can('delete products') || auth()->user()->can('create products'))
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fa fa-server"></i>
@@ -52,7 +51,18 @@
                         </li>
                     </ul>
                 </li>
-                @endcan
+                @endif
+
+                @role('kasir')
+                <li class="nav-item">
+                    <a href="{{ route('order.transaksi') }}" class="nav-link">
+                        <i class="nav-icon fa fa-shopping-cart"></i>
+                        <p>
+                            Transaksi
+                        </p>
+                    </a>
+                </li>
+                @endrole
                 
                 @role('admin')
                 <li class="nav-item has-treeview">
