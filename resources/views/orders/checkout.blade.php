@@ -1,7 +1,7 @@
 @extends('layouts.master')
 
 @section('title')
-    <title>Transaksi</title>
+    <title>Checkout</title>
 @endsection
 
 @section('css')
@@ -14,12 +14,13 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark">Transaksi</h1>
+                        <h1 class="m-0 text-dark">Checkout</h1>
                     </div>
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
-                            <li class="breadcrumb-item active">Transaksi</li>
+                            <li class="breadcrumb-item"><a href="{{ route('order.transaksi') }}">Transaksi</a></li>
+                            <li class="breadcrumb-item active">Checkout</li>
                         </ol>
                     </div>
                 </div>
@@ -32,25 +33,69 @@
                     <div class="col-md-8">
                         @card
                             @slot('title')
-                            
+                                <h4 class="card-title">Data Pelanggan</h4>
                             @endslot
-                            <form action="{{ route('order.storeCheckout') }}" method="post">
-                                @csrf
-                                <div class="form-group">
-                                    <label for="">Produk</label>
-                                    <input type="text" name="name" class="form-control">
+                                <div v-if="message" class="alert alert-success">
+                                    Transaksi telah disimpan, Invoice: <strong>#@{{ message }}</strong>
                                 </div>
                                 <div class="form-group">
-                                    <button class="btn btn-primary btn-sm">Kirim</button>
+                                    <label for="">Email</label>
+                                    <input type="text" name="email" 
+                                        v-model="customer.email"
+                                        class="form-control" 
+                                        @keyup.enter.prevent="searchCustomer"
+                                        required
+                                        >
+                                    <p>Tekan enter untuk mengecek email.</p>
                                 </div>
-                            </form>
+                                <div v-if="formCustomer">
+                                    <div class="form-group">
+                                        <label for="">Nama Pelanggan</label>
+                                        <input type="text" name="name" 
+                                            v-model="customer.name"
+                                            :disabled="resultStatus"
+                                            class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="">Alamat</label>
+                                        <textarea name="address"
+                                            class="form-control"
+                                            :disabled="resultStatus"
+                                            v-model="customer.address"
+                                            cols="5" rows="5" required></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="">No Telp</label>
+                                        <input type="text" name="phone" 
+                                            v-model="customer.phone"
+                                            :disabled="resultStatus"
+                                            class="form-control" required>
+                                    </div>
+                                </div>
                             @slot('footer')
-
+                                <div class="card-footer text-muted">
+                                    <div v-if="errorMessage" class="alert alert-danger">
+                                        @{{ errorMessage }}
+                                    </div>
+                                    <button class="btn btn-primary btn-sm float-right"
+                                        :disabled="submitForm"  
+                                        @click.prevent="sendOrder"  
+                                        >
+                                        @{{ submitForm ? 'Loading...':'Order Now' }}
+                                    </button>
+                                </div>
                             @endslot
                         @endcard
                     </div>
+                    @include('orders.cart')
                 </div>
             </div>
         </section>
     </div>
+@endsection
+
+@section('js')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/accounting.js/0.4.1/accounting.min.js"></script>
+    <script src="{{ asset('js/transaksi.js') }}"></script>
 @endsection
