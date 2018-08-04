@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Exports\OrderInvoice;
+use Carbon\Carbon;
 use App\Customer;
 use App\Product;
 use App\Order;
+use App\User;
 use Cookie;
 use DB;
+use PDF;
 
 class OrderController extends Controller
 {
@@ -138,5 +142,90 @@ class OrderController extends Controller
             return 'INV-' . $count;
         }
         return 'INV-1';
+    }
+
+    public function index(Request $request)
+    {
+        $customers = Customer::orderBy('name', 'ASC')->get();
+        $users = User::role('kasir')->orderBy('name', 'ASC')->get();
+        $orders = Order::orderBy('created_at', 'DESC')->with('order_detail', 'customer');
+
+        if (!empty($request->customer_id)) {
+            $orders = $orders->where('customer_id', $request->customer_id);
+        }
+
+        if (!empty($request->user_id)) {
+            $orders = $orders->where('user_id', $request->user_id);
+        }
+        
+        if (!empty($request->start_date) && !empty($request->end_date)) {
+            $this->validate($request, [
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date'
+            ]);
+            $start_date = Carbon::parse($request->start_date)->format('Y-m-d') . ' 00:00:01';
+            $end_date = Carbon::parse($request->end_date)->format('Y-m-d') . ' 23:59:59';
+
+            $orders = $orders->whereBetween('created_at', [$start_date, $end_date])->get();
+        } else {
+            $orders = $orders->take(10)->skip(0)->get();
+        }
+
+        return view('orders.index', [
+            'orders' => $orders,
+            'sold' => $this->countItem($orders),
+            'total' => $this->countTotal($orders),
+            'total_customer' => $this->countCustomer($orders),
+            'customers' => $customers,
+            'users' => $users
+        ]);
+    }
+
+    private function countCustomer($orders)
+    {
+        $customer = [];
+        if ($orders->count() > 0) {
+            foreach ($orders as $row) {
+                $customer[] = $row->customer->email;
+            }
+        }
+        return count(array_unique($customer));
+    }
+
+    private function countTotal($orders)
+    {
+        $total = 0;
+        if ($orders->count() > 0) {
+            $sub_total = $orders->pluck('total')->all();
+            $total = array_sum($sub_total);
+        }
+        return $total;
+    }
+
+    private function countItem($order)
+    {
+        $data = 0;
+        if ($order->count() > 0) {
+            foreach ($order as $row) {
+                $qty = $row->order_detail->pluck('qty')->all();
+                $val = array_sum($qty);
+                $data += $val;
+            }
+        } 
+        return $data;
+    }
+
+    public function invoicePdf($invoice)
+    {
+        $order = Order::where('invoice', $invoice)
+            ->with('customer', 'order_detail', 'order_detail.product')->first();
+        $pdf = PDF::setOptions(['dpi' => 150, 'defaultFont' => 'sans-serif'])
+            ->loadView('orders.report.invoice', compact('order'));
+        return $pdf->stream();
+    }
+
+    public function invoiceExcel($invoice)
+    {
+        return (new OrderInvoice($invoice))->download('invoice-' . $invoice . '.xlsx');
     }
 }
