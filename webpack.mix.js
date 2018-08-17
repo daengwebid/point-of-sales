@@ -12,3 +12,4 @@ let mix = require('laravel-mix');
  */
 
 mix.js('resources/assets/js/transaksi.js', 'public/js');
+mix.js('resources/assets/js/dashboard.js', 'public/js');
